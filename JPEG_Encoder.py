@@ -3,6 +3,9 @@ from PIL import Image
 import matplotlib.image as img
 import matplotlib.pyplot as plt
 
+def reverseInt(num):
+    return int(str(x)[::-1])
+
 class Encoder:
     
     Qlum = [[16, 11, 10, 16, 24, 40, 51, 61], 
@@ -83,51 +86,72 @@ class Encoder:
         blk = self.DCT.shape[0]
         imgH, imgW, numChan = self.quantisedImage.shape
         self.ACCoef = np.zeros(shape = ( (blk * blk) -1, 3))
-        counter = 0
 
         for chan in range(0, numChan):
             for row in range(0, imgH, blk):
                 for col in range(0, imgW, blk):
                     block = self.quantisedImage[row:row+blk, col:col+blk, chan]
                     i = 0
-                    j = 1 
+                    j = 1
+                    counter = 0
                     while j < blk and i < blk:
                         while j > 0:
                             self.ACCoef[counter, chan] = block[i, j]
+                            print(counter, i, j)
                             counter += 1
-                            print(counter)
                             j -= 1
                             i += 1
-                            print(i, j)
                             
                         if i < blk - 1:
+                            self.ACCoef[counter, chan] = block[i, j]
+                            print(counter, i, j)
+                            counter += 1
                             i += 1 
-                            print(i, j)
 
                         if i == blk - 1:
                             j += 1
-                            print(i, j)
                             self.ACCoef[counter, chan] = block[i, j]
+                            print(counter, i, j)
                             counter += 1
-                            print(counter)
+                            break
                         
                         while i > 0 and j < blk:
                             self.ACCoef[counter, chan] = block[i, j]
+                            print(counter, i, j)
                             counter += 1
-                            print(counter)
                             i -= 1
                             j += 1
-                            print(i, j)
                         
+                        self.ACCoef[counter, chan] = block[i, j]
+                        print(counter, i, j)
+                        counter += 1
                         j += 1
-                        print(i, j, 'here')
 
-                        if j == blk - 1:
+                        if j == blk:
                             i += 1
-                            print(i, j)
                             self.ACCoef[counter, chan] = block[i, j]
+                            print(counter, i, j)
                             counter += 1
-                            print(counter)
+                    i = 7
+                    j = 1
+                    while j < blk and i < blk:
+                        while j < blk:
+                            self.ACCoef[counter, chan] = block[i, j]
+                            print(counter, i, j)
+                            counter += 1
+                            j += 1
+                            i -= 1
+                        j -= 1
+                        i += 2
+
+                        while i < blk:
+                            self.ACCoef[counter, chan] = block[i, j]
+                            print(counter, i, j)
+                            counter += 1
+                            j -= 1
+                            i += 1
+                        i -= 1
+                        j += 2
 
      
 
