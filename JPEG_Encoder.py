@@ -2,6 +2,8 @@ import numpy as np
 from PIL import Image
 import matplotlib.image as img
 import matplotlib.pyplot as plt
+import matplotlib.colors as col
+import numpy.testing
 
 def reverseInt(num):
     return int(str(x)[::-1])
@@ -43,14 +45,30 @@ class Encoder:
                 
     def printDCT(self):
         print(self.DCT)
-    
+
     # Reads in an image and stores it as a numpy matrix
     def readFile(self, fileName):
         self.fileName = fileName
         self.image = img.imread(fileName)
+        self.image = 255 * self.image
+        self.image = self.image.astype(int)
+        plt.imshow(self.image, norm=col.Normalize(0, 255))
+        plt.show()
 
-    def convertIamgeYUV():
-        self.imageYUV = self.image.convert('YCbCr')
+    def convertImageYUV(self):
+        imgH, imgW, numChan = self.image.shape
+
+        for chan in range(0,numChan):
+            for row in range(0, imgH):
+                for col in range(0, imgW):
+                    if chan == 0:
+                        self.image[row, col, chan] = (0.3 * self.image[row, col, 0]) + (0.6 * self.image[row, col, 1]) + (0.1 * self.image[row, col, 2])
+
+                    elif chan == 1:
+                        self.image[row, col, chan] = 0.5*( (self.image[row, col ,2]) - (0.3 * self.image[row, col, 0]) + (0.6 * self.image[row, col, 1]) + (0.1 * self.image[row, col, 2]) )
+
+                    elif chan == 2:
+                        self.image[row, col, chan] = 0.625 * ( (self.image[row, col, 0]) - ((0.3 * self.image[row, col, 0]) + (0.6 * self.image[row, col, 1]) + (0.1 * self.image[row, col, 2])) )
         
     # This functions does a piece wise matrix mult of the DCT and the image
     def applyDCT(self):
@@ -64,6 +82,8 @@ class Encoder:
                 for col in range(0, imgW, blockSize):
                     temp = np.dot(self.image[row:row+blockSize, col:col+blockSize, chan], np.transpose(self.DCT))
                     self.imageEnc[row:row+blockSize, col:col+blockSize, chan] = np.dot(self.DCT, temp)
+        plt.imshow(self.imageEnc[:,:,1])
+        plt.show()
 
     # This step applies quantisation matrix according to JPEG standard
     def quantisation(self):
@@ -77,6 +97,45 @@ class Encoder:
                 for col in range(0, imgW, blockSize):
                     temp = self.imageEnc[row:row+blockSize, col:col+blockSize, chan]
                     self.quantisedImage[row:row+blockSize, col:col+blockSize, chan] = np.round((temp * 256) / self.Qlum)
+        plt.imshow(self.quantisedImage)
+        plt.show()
+    
+    def zag(self):
+        block = np.zeros(self.DCT.shape)
+        blk = self.DCT.shape[0]
+        imgH, imgW, numChan = self.quantisedImage.shape
+        self.ACCoef = np.zeros(shape = ((blk * blk) - 1, 3))
+        indexList = np.zeros(2, dtype=int)
+
+        for chan in range(0, numChan):
+            for row in range(0, imgH, blk):
+                for col in range(0, imgW, blk):
+                    block = self.quantisedImage[row:row+blk, col:col+blk, chan]
+                    indexList[0] = 0
+                    indexList[1] = 1
+                    rev = indexList[::-1]
+                    counter = 0
+                    
+                    while indexList[0] < blk and indexList[1] < blk:
+                        while (indexList[0] != rev[0]) and (indexList[1] != rev[1]): 
+                            self.ACCoef[counter, chan] = block[indexList[0], indexList[1]]
+                            print(counter, indexList[0], indexList[1], rev[0], rev[1])
+                            counter += 1
+                            indexList[1] -= 1
+                            indexList[0] += 1
+
+                        indexList[0] += 1
+                        rev = indexList[::-1]
+
+                        while ((indexList[0] != rev[0]) and (indexList[1] != rev[1])):
+                            self.ACCoef[counter, chan] = block[indexList[0], indexList[1]]
+                            print(counter, indexList[0], indexList[1])
+                            counter += 1
+                            indexList[1] += 1
+                            indexList[0] -= 1
+                        
+                        indexList[1] += 1
+                        rev = indexList[::-1]
 
 
     # This function has to seperate the transformed image into blocks and zig zag
@@ -160,7 +219,8 @@ encoder = Encoder()
 encoder.constructDCT(8)
 encoder.printDCT()
 encoder.readFile('lena.png')
+encoder.convertImageYUV()
 encoder.applyDCT()
 encoder.quantisation()
-encoder.zigZag()
+encoder.zag()
 plt.show(encoder.imageEnc)
