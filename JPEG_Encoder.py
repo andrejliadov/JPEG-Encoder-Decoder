@@ -50,9 +50,7 @@ class Encoder:
     def readFile(self, fileName):
         self.fileName = fileName
         self.image = img.imread(fileName)
-        self.image = 255 * self.image
-        self.image = self.image.astype(int)
-        plt.imshow(self.image, norm=col.Normalize(0, 255))
+        plt.imshow(self.image)
         plt.show()
 
     def convertImageYUV(self):
@@ -82,8 +80,6 @@ class Encoder:
                 for col in range(0, imgW, blockSize):
                     temp = np.dot(self.image[row:row+blockSize, col:col+blockSize, chan], np.transpose(self.DCT))
                     self.imageEnc[row:row+blockSize, col:col+blockSize, chan] = np.dot(self.DCT, temp)
-        plt.imshow(self.imageEnc[:,:,1])
-        plt.show()
 
     # This step applies quantisation matrix according to JPEG standard
     def quantisation(self):
@@ -97,7 +93,8 @@ class Encoder:
                 for col in range(0, imgW, blockSize):
                     temp = self.imageEnc[row:row+blockSize, col:col+blockSize, chan]
                     self.quantisedImage[row:row+blockSize, col:col+blockSize, chan] = np.round((temp * 256) / self.Qlum)
-        plt.imshow(self.quantisedImage)
+        self.quantisedImage.astype(int)
+        plt.imshow(self.quantisedImage[:,:,0], vmin=-1023, vmax=1023)
         plt.show()
     
     def zag(self):
